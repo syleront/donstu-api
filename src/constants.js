@@ -1,0 +1,1 @@
+export const API_DOMAIN = "edu.donstu.ru/api";

@@ -1,0 +1,26 @@
+{
+  "name": "donstu-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/package/index.js",
+  "scripts": {
+    "start": "node app.js",
+    "debug-build": "rollup -c",
+    "debug-watch": "rollup -c -w",
+    "production-build": "rollup -c --environment PRODUCTION:true",
+    "production-watch": "rollup -c -w --environment PRODUCTION:true"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "needle": "^2.4.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.4.0",
+    "rollup": "^1.21.3",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-json": "^4.0.0",
+    "rollup-plugin-node-externals": "^2.0.0",
+    "rollup-plugin-node-resolve": "^5.2.0"
+  }
+}
