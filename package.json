@@ -1,7 +1,7 @@
 {
-  "name": "donstu-api",
+  "name": "@syleront/donstu-api",
   "version": "1.0.0",
-  "description": "",
+  "description": "Donstu api wrapper",
   "main": "./dist/package/index.js",
   "scripts": {
     "start": "node app.js",
