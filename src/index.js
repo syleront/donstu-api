@@ -1,14 +1,12 @@
-import needle from "needle";
 import qs from "querystring";
-/* import { shallowEqualObjects } from "shallow-equal"; */
+import got from "got";
 
 import StuApiHelpers from "./helpers";
-import connectionDefaults from "./connection-defaults";
-import apiDefaults from "./api-defaults";
 import objects from "./objects";
 
-import { ConnectionError } from "./errors";
-import { API_DOMAIN } from "./constants";
+import { ConnectionError, MaxSizeError } from "./errors";
+import { API_DOMAIN, MAX_RESPONSE_SIZE } from "./constants";
+import { API_DEFAULTS, CONNECTION_DEFAULTS } from "./defaults";
 
 class StuApi {
   constructor() {
@@ -99,7 +97,17 @@ class StuApi {
   async _req(method, params = null) {
     try {
       const data = params ? qs.stringify(params) : null;
-      const r = await needle("get", `https://${API_DOMAIN}/${method}${data ? "?" + data : ""}`, connectionDefaults);
+      const url = `https://${API_DOMAIN}/${method}${data ? "?" + data : ""}`;
+
+      const request = got(url, CONNECTION_DEFAULTS);
+
+      request.on("downloadProgress", (progress) => {
+        if (progress.transferred > MAX_RESPONSE_SIZE) {
+          request.cancel();
+        }
+      });
+
+      const r = await request;
 
       if (r.statusCode === 200) {
         return r.body;
@@ -107,7 +115,13 @@ class StuApi {
         throw new ConnectionError(r.statusCode);
       }
     } catch (e) {
-      throw new ConnectionError(e.code);
+      if (e.name === "CancelError") {
+        throw new MaxSizeError();
+      } else if (e.response) {
+        throw new ConnectionError(e.response.statusCode);
+      } else {
+        throw new ConnectionError(e.code);
+      }
     }
   }
 
@@ -117,7 +131,7 @@ class StuApi {
   }
 
   async getGroupSchedule(id, ...args) {
-    const r = await this._req("Rasp", { idGroup: id, ...apiDefaults });
+    const r = await this._req("Rasp", { idGroup: id, ...API_DEFAULTS });
     return this._normalizeScheduleObject(r.data, ...args);
   }
 
@@ -127,7 +141,7 @@ class StuApi {
   }
 
   async getTeacherSchedule(id, ...args) {
-    const r = await this._req("Rasp", { idPrepodLine: id, ...apiDefaults });
+    const r = await this._req("Rasp", { idPrepodLine: id, ...API_DEFAULTS });
     return this._normalizeScheduleObject(r.data, ...args);
   }
 
@@ -137,7 +151,7 @@ class StuApi {
   }
 
   async getAudienceSchedule(id, ...args) {
-    const r = await this._req("Rasp", { idAudLine: id, ...apiDefaults });
+    const r = await this._req("Rasp", { idAudLine: id, ...API_DEFAULTS });
     return this._normalizeScheduleObject(r.data, ...args);
   }
 }

@@ -8,9 +8,7 @@ const isProduction = process.env.PRODUCTION === "true";
 export default {
   input: isProduction ? "./src/index.js" : "./app.js",
   plugins: [
-    externals({
-      include: ["needle"]
-    }),
+    externals({ deps: true }),
     resolve({
       jsnext: true
     }),
