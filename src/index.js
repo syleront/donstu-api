@@ -4,7 +4,7 @@ import got from "got";
 import StuApiHelpers from "./helpers";
 import objects from "./objects";
 
-import { ConnectionError, MaxSizeError } from "./errors";
+import { ConnectionError } from "./errors";
 import { API_DOMAIN, MAX_RESPONSE_SIZE } from "./constants";
 import { API_DEFAULTS, CONNECTION_DEFAULTS } from "./defaults";
 
@@ -116,7 +116,7 @@ class StuApi {
       }
     } catch (e) {
       if (e.name === "CancelError") {
-        throw new MaxSizeError();
+        throw new ConnectionError("MAX_SIZE_REACHED");
       } else if (e.response) {
         throw new ConnectionError(e.response.statusCode);
       } else {
