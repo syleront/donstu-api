@@ -1,3 +1,5 @@
+import moment from "moment";
+
 import dayNames from "./dayNames";
 
 class StuApiHelpers {
@@ -43,35 +45,50 @@ class StuApiHelpers {
     return this._searcher(input, list);
   }
 
-  formatDay(subjectList, index) {
-    const dayName = dayNames[index];
+  calculateWeek(scheduleArray) {
+    let first = scheduleArray.find((e) => e.date);
+    let first_date = first && first.date || new Date();
 
+    let last_day = -1;
+    let schedule = [{}, {}, {}, {}, {}, {}];
+
+    for (let i = 0; i < schedule.length; i++) {
+      schedule[i].items = [];
+      schedule[i].date = moment(first_date).locale("ru").startOf("isoWeek").add(i, "day").format("YYYY-MM-DDTHH:MM:SS");
+    }
+
+    for (const subject of scheduleArray) {
+      if (last_day !== subject.dayNumber) {
+        if (last_day > subject.dayNumber) {
+          break;
+        } else {
+          last_day = subject.dayNumber;
+        }
+      }
+
+      schedule[subject.dayNumber - 1].items.push(subject);
+    }
+
+    return schedule;
+  }
+
+  formatDay(dayObject, index) {
     let subjectString;
-    if (subjectList.length > 0) {
-      subjectString = subjectList.map((subj) => `• ${subj.start}-${subj.end} -> ${subj.lessonName}, ${subj.teacher}, ${subj.audience}`).join("\n");
+
+    if (dayObject.items.length > 0) {
+      subjectString = dayObject.items.map((subj) => {
+        return `• ${subj.start}-${subj.end} -> ${subj.lessonName}, ${subj.teacher}, ${subj.audience}`;
+      }).join("\n");
     } else {
       subjectString = "• Пар нет";
     }
 
-    return `== ${dayName} ==\n${subjectString}`;
+    return `== ${moment(dayObject.date).format("DD-MM-YYYY")} | ${dayNames[index]} ==\n${subjectString}`;
   }
 
-  formatWeek(weekScheduleArray, weekIndex, opts = {}) {
-    const { isCurrent, headerAddon } = opts;
-
-    let scheduleHeader = weekIndex === 0 ? "🔼 Верхняя неделя" : "🔽 Нижняя неделя";
-
-    if (isCurrent === true) {
-      scheduleHeader += " (текущая)";
-    }
-
-    if (headerAddon) {
-      scheduleHeader += " " + headerAddon;
-    }
-
-    const scheduleBody = weekScheduleArray.map(this.formatDay).join("\n\n");
-
-    return `${scheduleHeader}\n\n${scheduleBody}`;
+  formatWeek(scheduleArray) {
+    const formatted = this.calculateWeek(scheduleArray);
+    return formatted.map(this.formatDay.bind(this)).join("\n\n");
   }
 }
 

@@ -1,3 +1,7 @@
+## v2.0.0
+* Api changes adaptation
+* Removed formatters from schedule normalizing
+
 ## v1.1.0
 * isNewVer flag for requests to api
 * Adapt for new version api responses

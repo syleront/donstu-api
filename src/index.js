@@ -1,8 +1,9 @@
 import qs from "querystring";
+
 import got from "got";
+import moment from "moment";
 
 import StuApiHelpers from "./helpers";
-import objects from "./objects";
 
 import { ConnectionError } from "./errors";
 import { API_DOMAIN, MAX_RESPONSE_SIZE } from "./constants";
@@ -13,7 +14,7 @@ class StuApi {
     this.helpers = new StuApiHelpers(this);
   }
 
-  _normalizeScheduleObject(data, needFormat, { autoSelectSemester = false } = {}) {
+  _normalizeScheduleObject(data) {
     let schedule = [];
 
     data.rasp.forEach((subject) => {
@@ -24,6 +25,7 @@ class StuApi {
       subObj.date = subject["дата"];
       subObj.dayName = subject["день_недели"];
       subObj.dayNumber = subject["деньНедели"];
+      subObj.email = subject["почта"];
       subObj.lessonName = subject["дисциплина"];
       subObj.code = subject["код"];
       subObj.start = subject["начало"] && subject["начало"].split("-").join(":");
@@ -38,65 +40,27 @@ class StuApi {
       schedule.push(subObj);
     });
 
-    /* schedule = schedule.reverse().filter((value, index, self) => {
-      return self.findIndex((e) => {
-        const a = { ...value, code: 0, weekStart: 0, weekEnd: 0 };
-        const b = { ...e, code: 0, weekStart: 0, weekEnd: 0 };
-        return shallowEqualObjects(a, b);
-      }) === index;
-    }).reverse(); */
+    return { schedule, info: data.info };
+  }
 
-    if (needFormat === true) {
-      const { year, curNumNed, group } = data.info;
+  _getWeekStartDate(date) {
+    return (date ? moment(date, "DD-MM-YYYY") : moment())
+      .locale("ru")
+      .startOf("isoWeek")
+      .format("DD-MM-YYYY");
+  }
 
-      const semesters = {
-        first: objects.couplesArray,
-        second: objects.couplesArray
-      };
-
-      schedule.filter((subject) => subject.date === null).forEach((subject) => {
-        const dayIndex = subject.dayNumber - 1;
-        let objKey = null;
-
-        if (subject.semesterCode === 1) {
-          objKey = "first";
-        } else if (subject.semesterCode === 2) {
-          objKey = "second";
-        }
-
-        if (objKey !== null) {
-          if (subject.weekType === 0) {
-            semesters[objKey][0][dayIndex].push(subject);
-            semesters[objKey][1][dayIndex].push(subject);
-          } else if (subject.weekType === 1) {
-            semesters[objKey][0][dayIndex].push(subject);
-          } else if (subject.weekType === 2) {
-            semesters[objKey][1][dayIndex].push(subject);
-          }
-        }
-      });
-
-      const date = new Date();
-      const currentMonth = date.getMonth() + 1;
-      const currentSemester = (currentMonth >= 9 || currentMonth === 1) ? "first" : "second";
-
-      if (autoSelectSemester === true) {
-        return { couples: semesters[currentSemester], currentSemester, year, group, currentWeekIndex: curNumNed - 1 };
-      } else {
-        return { semesters, currentSemester, year, group, currentWeekIndex: curNumNed - 1 };
-      }
-
-    } else {
-      return {
-        schedule,
-        currentWeekIndex: data.info.curNumNed
-      };
-    }
+  _getNextWeekStartDate(date) {
+    return (date ? moment(date, "DD-MM-YYYY") : moment())
+      .locale("ru")
+      .add(1, "week")
+      .startOf("isoWeek")
+      .format("DD-MM-YYYY");
   }
 
   async _req(method, params = null) {
     try {
-      const data = params ? qs.stringify(params) : null;
+      const data = params ? qs.stringify({ ...params, ...API_DEFAULTS }) : API_DEFAULTS;
       const url = `https://${API_DOMAIN}/${method}${data ? "?" + data : ""}`;
 
       const request = got(url, CONNECTION_DEFAULTS);
@@ -125,34 +89,67 @@ class StuApi {
     }
   }
 
+
   async getGroupsList() {
     const r = await this._req("Raspgrouplist");
     return r.data;
   }
 
-  async getGroupSchedule(id, ...args) {
-    const r = await this._req("Rasp", { idGroup: id, ...API_DEFAULTS });
-    return this._normalizeScheduleObject(r.data, ...args);
+  async getGroupSchedule(id, start_date) {
+    const r = await this._req("Rasp", { idGroup: id, sdate: start_date });
+    return this._normalizeScheduleObject(r.data);
   }
+
+  async getGroupWeekSchedule(id, date = null) {
+    return this.getGroupSchedule(id, this._getWeekStartDate(date));
+  }
+
+  async getGroupNextWeekSchedule(id, date = null) {
+    return this.getGroupSchedule(id, this._getNextWeekStartDate(date));
+  }
+
 
   async getTeacherList() {
     const r = await this._req("Raspprepodlist");
     return r.data;
   }
 
-  async getTeacherSchedule(id, ...args) {
-    const r = await this._req("Rasp", { idPrepodLine: id, ...API_DEFAULTS });
-    return this._normalizeScheduleObject(r.data, ...args);
+  async getTeacherSchedule(id, start_date) {
+    const r = await this._req("Rasp", { idPrepodLine: id, sdate: start_date });
+    return this._normalizeScheduleObject(r.data);
   }
+
+  async getTeacherWeekSchedule(id, date = null) {
+    return this.getTeacherSchedule(id, this._getWeekStartDate(date));
+  }
+
+  async getTeacherNextWeekSchedule(id, date = null) {
+    return this.getTeacherSchedule(id, this._getNextWeekStartDate(date));
+  }
+
 
   async getAudienceList() {
     const r = await this._req("Raspaudlist");
     return r.data;
   }
 
-  async getAudienceSchedule(id, ...args) {
-    const r = await this._req("Rasp", { idAudLine: id, ...API_DEFAULTS });
-    return this._normalizeScheduleObject(r.data, ...args);
+  async getAudienceSchedule(id, start_date) {
+    const r = await this._req("Rasp", { idAudLine: id, sdate: start_date });
+    return this._normalizeScheduleObject(r.date);
+  }
+
+  async getAudienceWeekSchedule(id, date = null) {
+    return this.getAudienceSchedule(id, this._getWeekStartDate(date));
+  }
+
+  async getAudienceNextWeekSchedule(id, date = null) {
+    return this.getAudienceSchedule(id, this._getNextWeekStartDate(date));
+  }
+
+
+  async getGroupScheduleDates(id) {
+    const r = await this._req("GetRaspDates", { idGroup: id });
+    return r.date;
   }
 }
 
