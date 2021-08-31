@@ -1,3 +1,6 @@
+## V3.0.0
+* Rewrite to TS
+
 ## v2.0.0
 * Api changes adaptation
 * Removed formatters from schedule normalizing

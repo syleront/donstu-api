@@ -1,6 +1,6 @@
 {
   "name": "@syleront/donstu-api",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "Donstu api wrapper",
   "main": "./dist/package/index.js",
   "scripts": {
@@ -8,27 +8,28 @@
     "debug-build": "rollup -c",
     "debug-watch": "rollup -c -w",
     "production-build": "rollup -c --environment PRODUCTION:true",
-    "production-watch": "rollup -c -w --environment PRODUCTION:true"
+    "production-watch": "rollup -c -w --environment PRODUCTION:true",
+    "prepublish": "npm run production-build",
+    "test-build": "rollup -c --environment TEST_BUILD:true"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "got": "^11.0.1",
-    "moment": "^2.27.0"
+    "got": "^11.8.2",
+    "moment": "^2.29.1"
   },
   "files": [
-    "dist/package/index.js",
-    "src"
+    "dist/package"
   ],
-  "devDependencies": {
-    "eslint": "^6.8.0",
-    "rollup": "^1.21.3",
-    "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-json": "^4.0.0",
-    "rollup-plugin-node-externals": "^2.0.0",
-    "rollup-plugin-node-resolve": "^5.2.0"
-  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^20.0.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^13.0.4",
+    "rollup-plugin-delete": "^2.0.0",
+    "rollup-plugin-node-externals": "^2.2.0",
+    "rollup-plugin-typescript2": "^0.30.0"
   }
 }
